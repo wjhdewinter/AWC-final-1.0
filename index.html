@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWC Warehouse Tool V11</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+--black:#111;
+--orange:#ff7a00;
+--bg:#f4f4f4;
+}
+
+body{margin:0;font-family:Arial;background:var(--bg);}
+header{background:#000;color:#fff;padding:20px;text-align:center;}
+.lang{display:flex;justify-content:center;gap:10px;background:#222;padding:10px;}
+.lang button{padding:14px;font-size:16px;border:none;background:#333;color:#fff;border-radius:10px;}
+.lang button.active{background:var(--orange);}
+nav{display:grid;grid-template-columns:repeat(3,1fr);}
+nav button{padding:18px;font-size:18px;border:none;background:#222;color:#fff;}
+nav button.active{background:var(--orange);}
+main{padding:15px;}
+.card{background:#fff;padding:20px;border-radius:15px;margin-bottom:15px;}
+input,select,textarea{width:100%;padding:16px;margin-top:8px;border-radius:12px;border:1px solid #ccc;font-size:16px;}
+button.action{width:100%;padding:18px;margin-top:10px;border:none;border-radius:12px;font-size:18px;background:#000;color:#fff;}
+button.orange{background:var(--orange);}
+.preview{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+.preview img{width:90px;height:90px;object-fit:cover;border-radius:10px;border:2px solid var(--orange);}
+.tab{display:none;}
+.tab.active{display:block;}
+</style>
+</head>
+
+<body>
+
+<header>AWC Warehouse Tool V11</header>
+
+<div class="lang">
+<button onclick="setLang('nl')" id="nlBtn" class="active">NL</button>
+<button onclick="setLang('en')" id="enBtn">EN</button>
+</div>
+
+<nav>
+<button onclick="showTab('p')" class="active">Pallets</button>
+<button onclick="showTab('m')">Machines</button>
+<button onclick="showTab('i')">Incident</button>
+</nav>
+
+<main>
+
+<!-- PALLETS -->
+<div id="p" class="card tab active">
+<h3>Pallettelling</h3>
+
+<input id="naam" placeholder="Naam">
+<select id="loc">
+<option>Conakryweg</option>
+<option>Slego</option>
+</select>
+
+<input type="number" id="eu" placeholder="Europallets">
+<input type="number" id="blok" placeholder="Blokpallets">
+<input type="number" id="m2" placeholder="2 meter pallets">
+<input type="number" id="dpb" placeholder="DPB pallets">
+
+<input type="file" id="palletPhoto" multiple accept="image/*" capture="environment">
+<div id="pPrev" class="preview"></div>
+
+<button class="action orange" onclick="mail('Pallets')">Mail</button>
+<button class="action" onclick="excel()">Excel</button>
+<button class="action" onclick="pdf('Pallettelling','pPrev')">PDF</button>
+</div>
+
+<!-- MACHINES -->
+<div id="m" class="card tab">
+<h3>Machine checklist</h3>
+
+<input id="user" placeholder="Gebruiker">
+<input id="ser" placeholder="Serienummer">
+<input id="nr" placeholder="Machinenummer">
+
+<select><option>Goed</option><option>Fout</option></select>
+<select><option>Goed</option><option>Fout</option></select>
+<select><option>Goed</option><option>Fout</option></select>
+
+<textarea placeholder="Beschrijving"></textarea>
+
+<input type="file" id="machinePhoto" multiple accept="image/*" capture="environment">
+<div id="mPrev" class="preview"></div>
+
+<button class="action orange" onclick="mail('Machine')">Mail</button>
+<button class="action" onclick="excel()">Excel</button>
+<button class="action" onclick="pdf('Machine','mPrev')">PDF</button>
+</div>
+
+<!-- INCIDENT -->
+<div id="i" class="card tab">
+<h3>Incident</h3>
+
+<input placeholder="Naam">
+<input placeholder="Locatie">
+<input type="datetime-local">
+
+<textarea placeholder="Wat gebeurde er"></textarea>
+<textarea placeholder="Oorzaak"></textarea>
+
+<input type="file" id="incidentPhoto" multiple accept="image/*" capture="environment">
+<div id="iPrev" class="preview"></div>
+
+<button class="action orange" onclick="mail('Incident')">Mail</button>
+<button class="action" onclick="excel()">Excel</button>
+<button class="action" onclick="pdf('Incident','iPrev')">PDF</button>
+</div>
+
+</main>
+
+<script>
+
+function showTab(t){
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+document.getElementById(t).classList.add("active");
+}
+
+function setLang(l){
+document.getElementById("nlBtn").classList.toggle("active",l==="nl");
+document.getElementById("enBtn").classList.toggle("active",l==="en");
+}
+
+function preview(inputId,previewId){
+const input=document.getElementById(inputId);
+const preview=document.getElementById(previewId);
+
+input.addEventListener("change",()=>{
+preview.innerHTML="";
+Array.from(input.files).forEach(file=>{
+const reader=new FileReader();
+reader.onload=e=>{
+const img=document.createElement("img");
+img.src=e.target.result;
+preview.appendChild(img);
+};
+reader.readAsDataURL(file);
+});
+});
+}
+
+preview("palletPhoto","pPrev");
+preview("machinePhoto","mPrev");
+preview("incidentPhoto","iPrev");
+
+function mail(type){
+window.location.href="mailto:?subject="+type;
+}
+
+function excel(){
+alert("Excel export");
+}
+
+async function pdf(title,id){
+const {jsPDF}=window.jspdf;
+const doc=new jsPDF();
+doc.text(title,10,10);
+
+let y=20;
+const imgs=document.getElementById(id).querySelectorAll("img");
+
+for(let img of imgs){
+if(y>180){doc.addPage();y=20;}
+doc.addImage(img.src,'JPEG',10,y,100,70);
+y+=80;
+}
+
+doc.save(title+".pdf");
+}
+
+</script>
+
+</body>
+</html>
