@@ -1,4 +1,4 @@
-const CACHE_NAME = 'awc-v18-full-pro-cache-v5';
+const CACHE_NAME = 'awc-v18-full-pro-cache-v6';
 
 const URLS_TO_CACHE = [
   './',
