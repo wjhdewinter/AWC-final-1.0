@@ -1448,8 +1448,31 @@
     }
 
     function attachMultiPreview(inputId, previewId){
-      const input = document.getElementById(inputId);
-      const preview = document.getElementById(previewId);
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+
+  // 🔥 Android fix: reset input → voorkomt camera lock
+  input.addEventListener('click', function(){
+    this.value = null;
+  });
+
+  input.addEventListener('change', async () => {
+    preview.innerHTML = '';
+    const files = Array.from(input.files || []);
+
+    for(const file of files){
+      const reader = new FileReader();
+      reader.onload = function(e){
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        preview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    updateWhatsAppButton();
+  });
+}
 
       input.addEventListener('change', async () => {
         preview.innerHTML = '';
