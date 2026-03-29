@@ -1,8 +1,8 @@
 {
   "name": "AWC Warehouse Tool",
   "short_name": "AWC",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/Awcv1/",
+"scope": "/Awcv1/"
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ff7a00",
