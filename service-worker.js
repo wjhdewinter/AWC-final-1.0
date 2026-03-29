@@ -1,4 +1,4 @@
-const CACHE_NAME = 'awc-v18-cache-v2';
+const CACHE_NAME = 'awc-v18-cache-v3';
 const urlsToCache = [
   '/Awcv1/',
   '/Awcv1/index.html',
