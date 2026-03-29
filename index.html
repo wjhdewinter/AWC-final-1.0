@@ -2502,5 +2502,40 @@ ${getAppLink()}`;
       }, 1400);
     });
   </script>
+  <!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AWC Warehouse Tool</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ff7a00" />
+
+  <!-- iOS support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+</head>
+
+<body>
+
+  <h1>AWC Warehouse Tool</h1>
+
+  <!-- JOUW APP CONTENT HIER LATEN STAAN -->
+
+  <script>
+  // SERVICE WORKER REGISTRATIE
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("SW geregistreerd"))
+        .catch(err => console.log("SW fout:", err));
+    });
+  }
+  </script>
+
+</body>
+</html>
 </body>
 </html>
