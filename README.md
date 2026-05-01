@@ -31,3 +31,6 @@ Een browser kan via `mailto:` geen bestanden automatisch als bijlage meesturen o
 
 ## Update/cache fix
 Deze versie bevat automatische cache-verversing. Gebruik de knop **Update** in de app als een telefoon nog een oude versie toont.
+
+## Personeel export
+In de personeelsmodule is een keuze toegevoegd: alleen afwezigen/niet-aanwezigen versturen of de hele lijst versturen. De module zelf blijft alle medewerkers tonen.

@@ -1,4 +1,4 @@
-const CACHE='awc-versie-1-0-updatefix-20260501';
+const CACHE='awc-versie-1-0-personnel-absent-mode-20260501';
 const ASSETS=['./','./index.html','./app.js','./manifest.json','./icon-192.png','./icon-512.png','./icon.png','./README.md'];
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -10,7 +10,7 @@ self.addEventListener('activate',event=>{
     await Promise.all(keys.map(k=>caches.delete(k)));
     await self.clients.claim();
     const clientsList=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-    clientsList.forEach(client=>client.postMessage({type:'AWC_UPDATED',build:'20260501-UPDATEFIX'}));
+    clientsList.forEach(client=>client.postMessage({type:'AWC_UPDATED',build:'20260501-PERSONNEL-ABSENT-MODE-FIX'}));
   })());
 });
 self.addEventListener('message',event=>{
