@@ -231,4 +231,81 @@ function excelFlatten(t,data){const rows=[];if(t==='orders'){data.forEach(o=>{(o
 function excelRows(t){let data=hist(t);if(!data.length&&['damage','manco'].includes(t))data=[currentRowsData(t)];if(!data.length)return alert('Geen gegevens om naar Excel te exporteren. Sla eerst een registratie op of vul regels in.');const flat=excelFlatten(t,data).map(r=>Object.fromEntries(Object.entries(r).map(([k,v])=>[k,excelValue(v)])));if(!flat.length)return alert('Geen regels gevonden voor Excel.');const ws=XLSX.utils.json_to_sheet(flat),wb=XLSX.utils.book_new();ws['!cols']=Object.keys(flat[0]).map(k=>({wch:Math.min(Math.max(k.length+4,14),32)}));XLSX.utils.book_append_sheet(wb,ws,t.substring(0,31));XLSX.writeFile(wb,`AWC-${t}-${new Date().toISOString().slice(0,10)}.xlsx`)}
 function exportAllExcel(){const wb=XLSX.utils.book_new();let added=0;['pallets','personnel','warehouse','orders','machines','incidents','damage','manco'].forEach(t=>{const data=hist(t);if(data.length){const flat=excelFlatten(t,data);if(flat.length){const ws=XLSX.utils.json_to_sheet(flat);ws['!cols']=Object.keys(flat[0]).map(k=>({wch:Math.min(Math.max(k.length+4,14),32)}));XLSX.utils.book_append_sheet(wb,ws,t.substring(0,31));added++}}});if(!added)return alert('Er is nog geen historie om te exporteren.');XLSX.writeFile(wb,`AWC-alles-${new Date().toISOString().slice(0,10)}.xlsx`)}
 
+
+/* FINAL 1.0 clean output fix: no emoji in PDF/mail, WhatsApp keeps informal icons */
+function cleanStatusLabel(status){
+  const nl={aanwezig:'Aanwezig',verlof:'Verlof',ziek:'Ziek','te laat':'Te laat',afwezig:'Afwezig'};
+  const en={aanwezig:'Present',verlof:'Leave',ziek:'Sick','te laat':'Late',afwezig:'Absent'};
+  return (lang==='en'?en:nl)[status] || status || '-';
+}
+function personnelLinePlain(x){return `${x.name} - ${cleanStatusLabel(x.status)}${x.note?' - '+x.note:''}`}
+function personnelLineWhatsApp(x){return `${personIcon(x.status)} ${x.name} (${cleanStatusLabel(x.status)})${x.note?' - '+x.note:''}`}
+function textPersonnelPlain(p){
+  const g=personnelGroups(p);
+  const mode=p.reportMode||getPersonnelReportMode();
+  const title=lang==='en'?'AWC Staff check':'AWC Personeel check';
+  const notTitle=lang==='en'?'NOT PRESENT':'AFWEZIG / NIET AANWEZIG';
+  const fullTitle=lang==='en'?'FULL STAFF LIST':'VOLLEDIGE PERSONEELSLIJST';
+  const noAbs=lang==='en'?'No absent/not present employees.':'Geen afwezigen/niet aanwezigen.';
+  let txt=`${title}\n${tr('Teamleider')}: ${p.lead||'-'}\n${tr('Shift')}: ${p.shift||'-'}\n${tr('Locatie')}: ${p.location||'-'}\n${tr('Status')||'Status'}: ${translateStatus(p.status)}\n\n${notTitle} (${g.notPresent.length})\n`;
+  txt += g.notPresent.length ? g.notPresent.map(personnelLinePlain).join('\n') : noAbs;
+  if(mode==='all'){
+    txt += `\n\n${fullTitle} (${(p.people||[]).length})\n` + ((p.people||[]).length ? (p.people||[]).map(personnelLinePlain).join('\n') : '-');
+  }
+  txt += `\n\n${tr('Algemene opmerking')}: ${p.notes||'-'}`;
+  return txt;
+}
+function textPersonnelWhatsApp(p){
+  const g=personnelGroups(p);
+  const mode=p.reportMode||getPersonnelReportMode();
+  const title=lang==='en'?'AWC Staff check':'AWC Personeel check';
+  const notTitle=lang==='en'?'❗ Not present':'❗ Afwezig / niet aanwezig';
+  const fullTitle=lang==='en'?'👥 Full staff list':'👥 Volledige personeelslijst';
+  const noAbs=lang==='en'?'No absent/not present employees.':'Geen afwezigen/niet aanwezigen.';
+  let txt=`👥 ${title}\n${tr('Teamleider')}: ${p.lead||'-'}\n${tr('Shift')}: ${p.shift||'-'}\n${tr('Locatie')}: ${p.location||'-'}\n${tr('Status')||'Status'}: ${translateStatus(p.status)}\n\n${notTitle} (${g.notPresent.length})\n`;
+  txt += g.notPresent.length ? g.notPresent.map(personnelLineWhatsApp).join('\n') : noAbs;
+  if(mode==='all'){
+    txt += `\n\n${fullTitle} (${(p.people||[]).length})\n` + ((p.people||[]).length ? (p.people||[]).map(personnelLineWhatsApp).join('\n') : '-');
+  }
+  txt += `\n\n${tr('Algemene opmerking')}: ${p.notes||'-'}`;
+  return txt;
+}
+textPersonnel=textPersonnelPlain;
+pdfPersonnel=async function(p){
+  const g=personnelGroups(p);
+  const mode=p.reportMode||getPersonnelReportMode();
+  const d=doc(lang==='en'?'Staff check':'Personeel check', `${tr('Shift')}: ${p.shift||'-'} • ${tr('Locatie')}: ${p.location||'-'}`);
+  let y=66;
+  y=addSection(d,lang==='en'?'Summary':'Samenvatting',y);
+  y=addKeyValues(d,[[tr('Teamleider'),p.lead||'-'],[tr('Shift'),p.shift||'-'],[tr('Locatie'),p.location||'-'],[tr('Status')||'Status',translateStatus(p.status)],[lang==='en'?'Not present':'Afwezig / niet aanwezig',g.notPresent.length],[tr('Algemene opmerking'),p.notes||'-']],y);
+  y=addSection(d,lang==='en'?'Not present':'Afwezig / niet aanwezig',y);
+  if(g.notPresent.length){
+    g.notPresent.forEach((x,i)=>{y=addKeyValues(d,[[`${i+1}. ${x.name}`,`${cleanStatusLabel(x.status)}${x.note?' - '+x.note:''}`]],y);});
+  }else{
+    y=addLines(d,[lang==='en'?'No absent/not present employees.':'Geen afwezigen/niet aanwezigen.'],y);
+  }
+  if(mode==='all'){
+    y=addSection(d,lang==='en'?'Full staff list':'Volledige personeelslijst',y);
+    (p.people||[]).forEach((x,i)=>{y=addKeyValues(d,[[`${i+1}. ${x.name}`,`${cleanStatusLabel(x.status)}${x.note?' - '+x.note:''}`]],y);});
+  }
+  d.save(`AWC-personeel-${Date.now()}.pdf`);
+};
+mailPersonnel=function(){
+  const p=currentPersonnel();
+  const absentCount=personnelGroups(p).notPresent.length;
+  openMail('pers',`AWC ${tr('Personeel check')} – ${smartDate()} – ${p.location||''} – ${absentCount} ${lang==='en'?'not present':'afwezig'}`,textPersonnelPlain(p)+mailFooter([]));
+};
+updateWA=function(){
+  const active=document.querySelector('.tab.active')?.id;let txt='AWC Warehouse Tool';
+  if(active==='pallets')txt=textPallet(currentPallet());
+  if(active==='personnel')txt=textPersonnelWhatsApp(currentPersonnel());
+  if(active==='warehouse')txt=textWarehouse(currentWarehouse());
+  if(active==='orders')txt=textOrder(currentOrder());
+  if(active==='machines')txt=textMachine(currentMachine());
+  if(active==='incidents')txt='⚠️ AWC Incident\n'+val('i_what');
+  if(active==='damage')txt=textRows('damage');
+  if(active==='manco')txt=textRows('manco');
+  qs('wa').href='https://wa.me/?text='+encodeURIComponent(txt+'\n\n'+location.href);
+};
+
 init();
